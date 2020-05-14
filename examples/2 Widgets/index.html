@@ -1,0 +1,99 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ArcGIS JavaScript Expand Widget</title>
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        .logo {
+            top: 10px;
+            position: relative;
+            left: 10px;
+            max-height: 48px;
+        }
+
+
+        .heading {
+            padding-left: 0.75rem;
+            display: inline-block;
+            margin-left: 20px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.15/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.15/"></script>
+    <link rel="stylesheet" href="https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.2.5/css/calcite-web.min.css">
+    <script>
+    require([
+      "esri/config",
+      "esri/WebMap",
+      "esri/portal/Portal",
+      "esri/views/MapView",
+      "esri/widgets/BasemapGallery",
+      "esri/widgets/LayerList",
+      "esri/widgets/ScaleBar"
+    ], function(esriConfig, WebMap, Portal, MapView, BasemapGallery,LayerList, ScaleBar) {
+      //set the portal url
+      esriConfig.portalUrl = "https://local-maps.maps.arcgis.com";
+
+      //create the portal object
+      const portal = new Portal();
+
+      //load the portal
+      portal.load().then(() => {
+
+        //Get the header details
+        var imgLogo = document.getElementById("imgLogo");
+        var header = document.getElementById("header");
+        //Update the properties based on the shared theme
+        imgLogo.src = portal.portalProperties.sharedTheme.logo.small;
+        header.style.background = portal.portalProperties.sharedTheme.header.background;
+        header.style.color = portal.portalProperties.sharedTheme.header.text;
+
+      });
+
+      var map = new WebMap({
+          portalItem: { // autocasts as new PortalItem()
+           id: "8f5bfa21a7054a59858e965414e76b56"
+          }
+        });
+        var view = new MapView({
+          container: "viewDiv",
+          map: map
+        });
+
+        var basemapGallery = new BasemapGallery({
+          view: view
+        });
+
+        var layerList = new LayerList({
+          view: view
+        });
+
+
+        //"bottom-leading"|"bottom-left"|"bottom-right"|"bottom-trailing"|"top-leading"|"top-left"|"top-right"|"top-trailing"|"manual"
+        view.ui.add(basemapGallery, "top-right");
+        view.ui.add(layerList, "bottom-right");
+
+    });
+    </script>
+
+</head>
+
+<body>
+    <header id="header" class="header">
+        <img class="logo" id="imgLogo" height="48" src="">
+        <h2 class="heading">Vineyard Editor Application</h2>
+    </header>
+    <div id="viewDiv"></div>
+</body>
+
+</html>

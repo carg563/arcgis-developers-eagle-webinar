@@ -1,0 +1,226 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ArcGIS JavaScript Expand Widget</title>
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+
+
+        #infoDiv {
+            position: absolute;
+            top: 85px;
+            left: 60px;
+        }
+
+            #infoDiv input {
+                border: none;
+                box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 2px;
+            }
+
+        .logo {
+            top: 10px;
+            position: relative;
+            left: 10px;
+            max-height: 48px;
+        }
+
+
+        .heading {
+            padding-left: 0.75rem;
+            display: inline-block;
+            margin-left: 20px;
+        }
+
+        .threed-view {
+            top: 70px !important;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.15/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.15/"></script>
+    <link rel="stylesheet" href="https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.2.5/css/calcite-web.min.css">
+    <script>
+        require([
+            "esri/config",
+            "esri/WebMap",
+            "esri/WebScene",
+            "esri/portal/Portal",
+            "esri/views/MapView",
+            "esri/views/SceneView",
+            "esri/widgets/BasemapGallery",
+            "esri/widgets/Editor",
+            "esri/widgets/Expand",
+            "esri/widgets/LayerList",
+            "esri/widgets/ScaleBar"
+        ], function (esriConfig, WebMap, WebScene, Portal, MapView, SceneView, BasemapGallery, Editor, Expand, LayerList, ScaleBar) {
+            var switchButton = document.getElementById("switch-btn");
+
+            var appConfig = {
+                mapView: null,
+                sceneView: null,
+                activeView: null,
+                container: "viewDiv" // use same container for views
+            }
+
+            //set the portal url
+            esriConfig.portalUrl = "https://local-maps.maps.arcgis.com";
+
+            //create the portal object
+            const portal = new Portal();
+            portal.load().then(() => {
+                console.log(portal);
+                //Get the header details
+                var imgLogo = document.getElementById("imgLogo");
+                var header = document.getElementById("header");
+                //Update the properties based on the shared theme
+                imgLogo.src = portal.portalProperties.sharedTheme.logo.small;
+                header.style.background = portal.portalProperties.sharedTheme.header.background;
+                header.style.color = portal.portalProperties.sharedTheme.header.text;
+            });
+
+            var webmap = new WebMap({
+                portalItem: { // autocasts as new PortalItem()
+                    id: "8f5bfa21a7054a59858e965414e76b56"
+                }
+            });
+
+            var scene = new WebScene({
+                portalItem: {
+                    // autocasts as new PortalItem()
+                    id: "8c9b21579c8143a1a907bd64d6e12eaa"
+                }
+            });
+
+            //var view = new MapView({
+            //    container: "viewDiv",
+            //    map: map
+            //});
+
+            // create 3D view, won't initialize until container is set
+            appConfig.sceneView = createView("3d");
+            appConfig.sceneView.map = scene;
+            appConfig.sceneView.container.style.top = "70px !important";
+            // create 2D view and and set active
+            appConfig.mapView = createView("2d");
+            appConfig.mapView.map = webmap;
+            appConfig.activeView = appConfig.mapView;
+
+
+            // switch the view between 2D and 3D each time the button is clicked
+            switchButton.addEventListener("click", function () {
+                switchView();
+            });
+
+            // Switches the view from 2D to 3D and vice versa
+            function switchView() {
+                var is3D = appConfig.activeView.type === "3d";
+                var activeViewpoint = appConfig.activeView.viewpoint.clone();
+
+                // remove the reference to the container for the previous view
+                appConfig.activeView.container = null;
+
+                if (is3D) {
+                    // if the input view is a SceneView, set the viewpoint on the
+                    // mapView instance. Set the container on the mapView and flag
+                    // it as the active view
+                    appConfig.mapView.viewpoint = activeViewpoint;
+                    appConfig.mapView.container = appConfig.container;
+                    appConfig.activeView = appConfig.mapView;
+                    switchButton.value = "3D";
+                } else {
+
+                    appConfig.sceneView.viewpoint = activeViewpoint;
+                    appConfig.sceneView.container = appConfig.container;
+                    appConfig.activeView = appConfig.sceneView;
+                    appConfig.sceneView.container.style.top = "70px !important";
+                    switchButton.value = "2D";
+                }
+            }
+
+            // convenience function for creating a 2D or 3D view
+            function createView(type) {
+                var view;
+                var is2D = type === "2d";
+                if (is2D) {
+                    view = new MapView({ container: "viewDiv" });
+                    return view;
+                } else {
+                    view = new SceneView({ container: "viewDiv" });
+
+                }
+                return view;
+            }
+
+            var basemapGallery = new BasemapGallery({
+                view: appConfig.mapView
+            });
+
+            var layerList = new LayerList({
+                view: appConfig.mapView
+            });
+
+            var editor = new Editor({
+                view: appConfig.mapView
+            });
+
+            basemapExpand = new Expand({
+                expandIconClass: "esri-icon-basemap",
+                expandTooltip: "View Basemaps",
+                view: appConfig.mapView,
+                content: basemapGallery,
+                group: "top-right"
+            });
+            layerlistExpand = new Expand({
+                expandIconClass: "esri-icon-layers",
+                expandTooltip: "View Layerlist",
+                view: appConfig.mapView,
+                content: layerList,
+                group: "top-right"
+            });
+
+            appConfig.mapView.ui.add([basemapExpand, layerlistExpand], "top-right");
+            appConfig.mapView.ui.add([editor], "bottom-left");
+
+            var editor3D = new Editor({
+                view: appConfig.sceneView
+            });
+            appConfig.sceneView.ui.add([editor3D], "bottom-left");
+
+
+            appConfig.mapView.on("click",({x,y})=>{
+		            const screenPoint = {x,y};
+		            view.hitTest(screenPoint)
+		            .then(response =>{
+
+		            })
+	          });
+
+        });
+    </script>
+
+</head>
+
+<body>
+    <header id="header" class="header">
+        <img class="logo" id="imgLogo" height="48" src="">
+        <h2 class="heading">Vineyard Editor Application</h2>
+    </header>
+    <div id="viewDiv"></div>
+    <div id="infoDiv">
+        <input class="esri-component esri-widget--button esri-widget esri-interactive"
+               type="button"
+               id="switch-btn"
+               value="3D" />
+    </div>
+</body>
+
+</html>
